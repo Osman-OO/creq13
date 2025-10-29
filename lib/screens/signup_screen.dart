@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'success_screen.dart';
+import '../widgets/animated_text_field.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -20,8 +22,18 @@ class _SignupScreenState extends State<SignupScreen> {
   double _progress = 0.0;
   String _progressMessage = '';
   int _passwordStrength = 0;
+  int _currentFieldIndex = 0;
 
   final List<String> _avatars = ['😀', '🚀', '🎮', '🎨', '⚡'];
+  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNodes[0].requestFocus();
+    });
+  }
 
   @override
   void dispose() {
@@ -29,6 +41,9 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _dobController.dispose();
+    for (var node in _focusNodes) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -225,11 +240,16 @@ class _SignupScreenState extends State<SignupScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 30),
-                _buildTextField(
+                AnimatedTextField(
                   controller: _nameController,
                   label: 'Adventure Name',
                   icon: Icons.person,
-                  onChanged: (value) => _updateProgress(),
+                  onChanged: (value) {
+                    _updateProgress();
+                    if (value.isNotEmpty && _nameController.text.length >= 2) {
+                      _focusNodes[1].requestFocus();
+                    }
+                  },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'What should we call you on this adventure?';
@@ -238,11 +258,16 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-                _buildTextField(
+                AnimatedTextField(
                   controller: _emailController,
                   label: 'Email Address',
                   icon: Icons.email,
-                  onChanged: (value) => _updateProgress(),
+                  onChanged: (value) {
+                    _updateProgress();
+                    if (value.contains('@') && value.contains('.')) {
+                      _focusNodes[2].requestFocus();
+                    }
+                  },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'We need your email for adventure updates!';
@@ -409,27 +434,6 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required String? Function(String?) validator,
-    Function(String)? onChanged,
-  }) {
-    return TextFormField(
-      controller: controller,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: Colors.deepPurple),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-      validator: validator,
     );
   }
 }
